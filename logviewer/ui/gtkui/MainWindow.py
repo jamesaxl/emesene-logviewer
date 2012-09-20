@@ -19,6 +19,7 @@ from gi.repository import Gtk
 from MenuBar import MenuBar
 from ContactList import ContactList
 from Viewer import Viewer
+from Login import Login
 import os
 
 class MainWindow(Gtk.Window):
@@ -29,42 +30,84 @@ class MainWindow(Gtk.Window):
         self.get_chat = get_chat
         self.connect("delete-event", Gtk.main_quit)
         self.resize(300,500)
-        self.image = Gtk.Image()
-        self.image.set_from_file("logviewer/icons/logo.png")
-        self.image.xalign = 0.5
-        self.image.yalign = 0.5
-
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.hpaned = Gtk.HPaned()
         view = Viewer()
-        contacts = ContactList(view.load_contact_log, self.get_chat)
-        mb = MenuBar(self.get_session, contacts.fill_contact_list, 
-            self.show_widget, self.unload)
+        self.scroll_view = Gtk.ScrolledWindow()
+        self.scroll_view.set_border_width(1)
+        self.scroll_view.add(view)
+        img_remove = Gtk.Image()
+        img_remove.set_from_stock(Gtk.STOCK_CLOSE, Gtk.IconSize.MENU)
+        self.b_remove = Gtk.Button()
+        self.b_remove.set_image(img_remove)
+        self.b_alig = Gtk.Alignment(xalign=1, yalign=1, xscale=0.0, yscale=1.0)
+        self.b_alig.add(self.b_remove)
+        self.b_remove.connect('clicked', self._clicked) 
+        self.view_box = Gtk.VBox(False,1)
+        self.view_box.set_border_width(8)
+        self.view_box.pack_start(self.b_alig, False, False, 1)
+        self.view_box.pack_start(self.scroll_view, True, True, 1)
 
-        scroll_view = Gtk.ScrolledWindow()
+        contacts = ContactList(view.load_contact_log, self.get_chat, self.hpaned, self.view_box, self.resize)
+        mb = MenuBar(self.get_session, contacts.fill_contact_list, 
+            self.show_widget, self.unload, self._about)
+
+        self.login = Login(self.get_session, contacts.fill_contact_list,
+            self.show_widget, self.unload, mb.filemenu, mb.unload_item)
+
         scroll_contact = Gtk.ScrolledWindow()
 
-        scroll_view.set_border_width(1)
         scroll_contact.set_border_width(1)
  
-        scroll_view.add(view)
         scroll_contact.add(contacts)
-        self.hpaned = Gtk.HPaned()
         self.hpaned.add1(scroll_contact)
-        self.hpaned.add2(scroll_view)
         self.hpaned.set_position(250)
-        self.vbox = Gtk.VBox(False, 2)
+        self.vbox = Gtk.VBox(False, 7)
+
         self.vbox.pack_start(mb, False, False, 1)
-        self.vbox.add(self.image)
+        self.vbox.pack_start(self.login, False, False, 10)
         self.add(self.vbox)
         self.show_all()
 
     def show_widget(self):
+        self.vbox.remove(self.login)
         self.vbox.pack_start(self.hpaned, True, True,5)
-        self.vbox.remove(self.image)
+        if self.hpaned.get_child2():
+            self.hpaned.remove(self.view_box)
+        self.resize(300,530)
         self.show_all()
-        self.resize(850,530)
 
     def unload(self, item, filemenu):
         self.vbox.remove(self.hpaned)
-        self.vbox.add(self.image)
+        self.vbox.pack_start(self.login, False, False, 10)
         filemenu.remove(item)
         self.resize(300,530)
+
+    def _clicked(self, clicked = None):
+        self.hpaned.remove(self.view_box)
+        self.resize(300,530)
+
+    def _about(self, about):
+        dialog = Gtk.Dialog("About", self, 0,
+            (Gtk.STOCK_OK, Gtk.ResponseType.OK))
+        dialog.set_default_size(300, 100)
+        image = Gtk.Image()
+        image.set_from_file("logviewer/icons/logo.png")
+        title = Gtk.Label()
+        title.set_markup("<big><b>emesene-logviewer</b></big>")
+        disc = Gtk.Label()
+        disc.set_markup("A simple tool to browse in chat history")
+        authors = Gtk.Label()
+        authors.set_markup("<small>jamesaxl and c10ud</small>")
+        title.set_line_wrap(True)
+        disc.set_line_wrap(True)
+        authors.set_line_wrap(True)
+        box = dialog.get_content_area()
+        box.add(image)
+        box.add(title)
+        box.add(disc)
+        box.add(authors)
+        dialog.show_all()
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            dialog.destroy()

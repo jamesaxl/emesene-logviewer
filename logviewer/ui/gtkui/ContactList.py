@@ -20,19 +20,22 @@ from gi.repository import Gtk, GdkPixbuf
 import os
 class ContactList(Gtk.TreeView):
 
-    def __init__(self, load, get_chat):
+    def __init__(self, load, get_chat, hpaned, view_box, resize):
         self.load = load
         self.get_chat = get_chat
+        self.hpaned = hpaned
+        self.view_box  = view_box
+        self.resize = resize
         self.model = Gtk.ListStore(GdkPixbuf.Pixbuf, str)
         Gtk.TreeView.__init__(self, self.model)
         self.connect("cursor-changed", self.get_selected_contact)
         self.set_headers_visible(0)
         renderer_pixbuf = Gtk.CellRendererPixbuf()
-        column_pixbuf = Gtk.TreeViewColumn("Image", renderer_pixbuf, stock_id=0)
+        column_pixbuf = Gtk.TreeViewColumn("Image", renderer_pixbuf, pixbuf = 0)
         self.append_column(column_pixbuf)
 
         renderer_text = Gtk.CellRendererText()
-        column_text = Gtk.TreeViewColumn("Text", renderer_text, text=1)
+        column_text = Gtk.TreeViewColumn("Text", renderer_text, text = 1)
         self.append_column(column_text)
         self.fill_contact_list(None, None, None)
 
@@ -42,7 +45,9 @@ class ContactList(Gtk.TreeView):
             mod, itr = tb.get_selected()
             if itr != None:
                 self.load(self.get_chat(mod.get_value(itr, 1)))
-
+                self.hpaned.add2(self.view_box)
+                self.hpaned.show_all()
+                self.resize(850,530)
 
     def fill_contact_list(self, contacts, session, account):
         self.model.clear()

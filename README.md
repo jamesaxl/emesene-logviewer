@@ -1,1 +1,1 @@
-emesene-logviewer is a tools which can help users to browser their chats history without open any sessions
+emesene-logviewer is a tools which can help users to browse in their chats history without opening any sessions
